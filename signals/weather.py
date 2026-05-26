@@ -23,3 +23,9 @@ def get_grid(lat, lon):
         "gridY": props["gridY"],
         "forecast_url": props["forecast"],
     }
+
+def get_forecast(forecast_url):
+    response = requests.get(forecast_url, headers=NOAA_HEADERS)
+    data = response.json()
+    periods = data["properties"]["periods"]
+    return periods
