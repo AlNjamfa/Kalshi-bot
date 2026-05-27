@@ -88,3 +88,118 @@ or when the combined line gets too long
 - Only need it once → can combine
 - Line too long to read → separate lines
 - Readability always wins over cleverness
+
+## Abstraction
+Hiding complexity behind a simple interface.
+The caller doesn't need to know HOW it works, just WHAT it returns.
+
+Example:
+analyze_weather_market(lat, lon, market_type, threshold, market_odds)
+    → internally calls get_grid() then get_forecast()
+    → caller never sees those functions
+    → caller just gets back a YES/NO/PASS signal
+
+Real world analogy:
+You press a light switch - you don't need to know about
+wiring, circuits, or electricity. The complexity is hidden.
+
+## Function Composition
+One function calling other functions to build complex behavior
+from simple pieces.
+
+analyze_weather_market() → calls get_grid() → calls get_forecast()
+
+Each function does ONE thing. Combined they do something powerful.
+
+## Single Responsibility Principle
+Every function should have ONE job:
+get_grid()     → finds WHERE the weather data is
+get_forecast() → gets WHAT the weather data is
+analyze_weather_market() → scores the Kalshi edge
+
+If a function is doing two things → split it into two functions.
+
+## Substitution / Method Chaining
+Like algebra - substitute a variable back in:
+props = data["properties"]
+periods = props["periods"]
+# same as:
+periods = data["properties"]["periods"]
+
+## When To Collapse vs Separate Lines
+Collapse when: only used once, still readable
+Separate when: used multiple times, line too long, needs explanation
+
+## Headers vs Params
+params  → appended to URL as ?key=value (visible in URL)
+headers → sent in request envelope (invisible, more secure)
+Use headers for: authentication, content type, user identification
+Use params for: filtering, pagination, query options
+
+## Data Extraction Pattern
+Drilling down from a full API response to one specific value.
+Each step navigates one level deeper into nested data.
+
+Example - extracting temperature from NOAA:
+response.json()              → full Python dictionary
+data["properties"]           → navigate into properties section  
+data["properties"]["periods"]→ navigate into periods list
+periods[0]                   → grab first (most current) period
+today["temperature"]         → extract just the temperature number
+temp = 76                    → clean integer ready to use
+
+Rule: extract values you use multiple times into named variables
+temp is cleaner than writing today["temperature"] everywhere
+
+## Indexing
+list[0]  → first item (Python starts at 0, not 1)
+list[1]  → second item
+list[-1] → last item
+
+NOAA returns periods in chronological order:
+periods[0] = most current period (This Afternoon/Tonight)
+periods[1] = next period
+periods[13] = 7 days from now
+
+## Why Extract Into Variables
+today["temperature"]  ← have to remember what this means
+temp                  ← instantly readable, used multiple times
+
+Same value, better readability.
+Extraction also gives you a place to add comments if needed.
+
+## Two Types of Decision Trees
+
+Quantity-based (how much?):
+if diff_pct >= 5:   → many possible values
+elif diff_pct >= 2:
+elif diff_pct >= 0:
+
+Category-based (which type?):
+if market_type == "rain":      → fixed set of options
+elif market_type == "temp_above":
+elif market_type == "temp_below":
+
+Use quantity-based when the input is a number on a scale.
+Use category-based when the input is one of a fixed set of options.
+
+## Consistent Interface Pattern
+Every signal function returns the same core fields:
+- true_prob    → what we think the probability is
+- market_odds  → what Kalshi is pricing it at
+- edge         → the difference (our edge)
+- recommendation → YES/NO/PASS
+
+Plus context-specific fields (coin, team, temp, etc.)
+
+This is API design — consistent outputs make code maintainable.
+Any caller knows exactly what fields to expect regardless of
+which signal function they call.
+
+## Paper Trading Rule
+Always test on demo environment first.
+demo-api.kalshi.com = fake money, real market data
+trading-api.kalshi.com = real money
+
+Never go live until 2+ weeks of demo results confirm edge is real.
+
