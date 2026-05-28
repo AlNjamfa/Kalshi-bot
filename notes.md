@@ -203,3 +203,23 @@ trading-api.kalshi.com = real money
 
 Never go live until 2+ weeks of demo results confirm edge is real.
 
+## JWT - JSON Web Token
+A string that proves you're authenticated without resending credentials.
+
+Flow:
+1. Send email + password → server verifies
+2. Server returns JWT token
+3. Include token in every subsequent request header
+4. Token expires after set time → login again for new token
+
+Analogy: wristband at an event. Show ID once, wear wristband all night.
+
+Format: Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+## Dictionary Access - [] vs .get()
+data["key"]     → crashes if key missing (KeyError)
+data.get("key") → returns None if key missing (safe)
+
+Use [] when certain key exists
+Use .get() when key might be missing
+
