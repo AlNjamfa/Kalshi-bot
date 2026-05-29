@@ -4,4 +4,4 @@ __pycache__/
 node_modules/
 .DS_Store
 venv/
-*.log
+*.logkalshi_private_key.key
