@@ -44,7 +44,7 @@ def get_sports_edge(sport, team, market_odds):
                                     team_prob = convert_american_to_prob(team_odds)
                                     opponent_prob = convert_american_to_prob(opponent_odds)
                                     true_prob = remove_vig(team_prob, opponent_prob)
-                                    edge = true_prob - market_odd
+                                    edge = true_prob - market_odds
                                     recommendation = "YES" if edge > 0.05 else "NO" if edge < -0.05 else "PASS"
                                     return {
                                         "team": team,
