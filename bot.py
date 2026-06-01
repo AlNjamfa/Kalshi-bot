@@ -8,6 +8,7 @@ from signals.weather import analyze_weather_market
 from dotenv import load_dotenv
 load_dotenv()
 EDGE_THRESHOLD = 0.05
+DRY_RUN = True
 BANKROLL = float(os.getenv("BANKROLL", 500))
 MAX_KELLY = float(os.getenv("MAX_KELLY_FRACTION", 0.25))
 
@@ -48,11 +49,6 @@ def run_bot():
         if edge >= EDGE_THRESHOLD:
             bet_size = calculate_bet_size(edge, true_prob)
             price_cents = int(market_odds * 100)
-            print(f"EDGE FOUND: {ticker} | {recommendation} | edge: {edge:.2%} | bet: ${bet_size}")
-            place_order(ticker, "yes", 1, price_cents)
-
-        else:
-            print(f"No edge: {ticker} | edge: {edge:.2%}")
-
+            print(f"EDGE FOUND: {ticker} | {recommendation} | edge: {edge:.2%} | bethyif DRY_RUN:
 if __name__ == "__main__":
     run_bot()
