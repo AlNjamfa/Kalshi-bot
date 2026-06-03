@@ -1,1 +1,3 @@
 # Kalshi Bot 
+
+# Broke and needed a way to pay for claude code so here we are with a prediction bot...
