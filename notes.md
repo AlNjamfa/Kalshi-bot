@@ -223,3 +223,162 @@ data.get("key") → returns None if key missing (safe)
 Use [] when certain key exists
 Use .get() when key might be missing
 
+## String Slicing
+string[:50]   → first 50 characters
+string[50:]   → everything from position 50 onward
+string[2:10]  → characters 2 through 9
+string[-5:]   → last 5 characters
+
+## API Debugging Process
+1. Don't panic at errors
+2. Print the raw response to see what server actually says
+3. Check status codes:
+   - 200 = success
+   - 401 = unauthorized (wrong credentials OR wrong URL)
+   - 404 = endpoint not found
+   - 500 = server error on their end
+4. Read the response body - it often tells you exactly what's wrong
+5. Fix the root cause, not the symptom
+
+## Why Constants Matter
+Hardcoded URLs = change every function manually when API moves
+Constants = change one line, everything updates
+
+## APIs Change - Always Be Ready
+- Companies rebrand
+- Endpoints get deprecated  
+- Versions get upgraded
+- Always store URLs as constants
+- Check API changelogs regularly
+
+## Professional Debugging Framework
+
+5 Levels:
+1. Read full traceback bottom to top
+2. Print everything before the crash line
+3. Verify your inputs (None values cause silent failures)
+4. Isolate the broken component and test alone
+5. Read raw server responses before parsing
+
+5 Questions Every Bug:
+1. What line crashed?
+2. What did it receive?
+3. What did it expect?
+4. Is the data what I think it is?
+5. What does the server actually say?
+
+Key debug lines for API calls:
+print('Status:', r.status_code)
+print('Response:', r.text[:500])
+print('Input loaded:', bool(os.getenv('KEY_NAME')))
+
+Misleading errors - the error you see isn't always
+the real problem. Go one layer deeper.
+
+## Common Status Codes to Memorize
+200 → success, everything worked
+201 → created, POST succeeded
+400 → bad request, your data is malformed
+401 → unauthorized, wrong credentials or wrong URL
+403 → forbidden, you don't have permission
+404 → not found, endpoint doesn't exist
+429 → too many requests, slow down
+500 → server error, their problem not yours
+503 → service unavailable, server is down
+
+## DRY vs Hardcoding
+DRY = don't repeat the same value in multiple places
+Hardcoding = embedding values directly in code instead of variables/constants
+
+Both are problems. DRY violations make maintenance painful.
+Hardcoding makes security and flexibility painful.
+
+## Strings vs Variables in Dictionaries
+{"key": variable}
+
+"key"    → string literal, fixed text, the label
+variable → refers to a variable's value, can change
+
+Example:
+limit = 100
+{"limit": limit} → sends limit=100 to the API
+
+"limit" is what Kalshi expects to see
+limit is what you want to send
+
+## Fixing Broken Indentation
+
+When indentation gets messy in VSCode, never fix it line by line.
+Use Python to rewrite the file programmatically instead.
+
+**Step 1 — Write the file using Python:**
+python3 -c "
+lines = ['line1\n', 'line2\n']
+with open('file.py', 'w') as f:
+    f.writelines(lines)
+print('written')
+"
+
+**Step 2 — Verify no syntax errors:**
+python3 -c "import ast; ast.parse(open('file.py').read()); print('No syntax errors')"
+
+**Step 3 — Run the file:**
+python file.py
+
+**Why this works:**
+- Python writes each line exactly as specified
+- No VSCode auto-indent interference
+- ast.parse() catches all indentation errors before runtime
+- Saves time vs debugging line by line
+
+## series_ticker — Kalshi Market Filtering
+
+The Kalshi API returns all market types by default, including parlay/multi-game
+markets that have zero liquidity and no prices (yes_ask_dollars = 0.0).
+
+Use series_ticker to filter to a specific group of related markets:
+- series_ticker="KXBTCD" → Bitcoin price markets (have real prices)
+- series_ticker="KXMVESPORTSMULTIGAMEEXTENDED" → parlay markets (no prices, useless)
+
+Without this filter, edge calculations are meaningless because market_odds = 0.0
+makes every signal look like it found massive edge.
+
+Key lesson: always verify your input data before trusting your output.
+Garbage in = garbage out.
+
+## JSONL Logging Pattern
+Append-only log format — one JSON object per line.
+Use json.dumps(data) + chr(10) to write each line safely.
+Open with "a" mode to append, never overwrite.
+This is the industry standard for event logs.
+
+## Session — June 16, 2026
+
+### Price Filter (15–85 cent rule)
+Markets below 15 cents or above 85 cents are already near-certain — the market has priced in reality. 
+No edge exists there. Only trade markets in the 15–85 cent range where genuine uncertainty exists.
+Added filter in bot.py to skip markets outside this range.
+
+### Liquidity Filter
+If volume_24h is 0, nobody is trading the market. The spread is fake and you can't get filled at a real price.
+Added volume > 0 check to both loops in bot.py.
+
+### Tomorrow's Markets > Today's Markets
+Today's weather market is near-resolved by the time the bot runs — the temperature is already being observed.
+Tomorrow's market has 24 hours of forecast uncertainty. That's where NOAA gives us a real signal edge.
+Fixed weather.py to use periods[2] (tomorrow's daytime forecast) instead of periods[0] (today).
+
+### The market_odds bug (yes/no price mapping)
+bot.py was always reading yes_ask_dollars as market_odds, even when recommending NO.
+A NO recommendation means you're buying the NO contract — so market_odds should be no_ask_dollars.
+Fixed: market_odds = no_price if recommendation == "NO" else yes_price
+
+### Edge formula reminder
+edge = true_prob - market_odds
+Positive edge = our signal thinks the event is MORE likely than the market does → trade it.
+Negative edge = market knows more than us → skip it.
+
+### Compounding principle
+Fewer trades + higher quality = faster compounding.
+Kelly sizing grows the bankroll proportionally to edge — never risks ruin.
+The path to $400k from $10 is discipline, not volume.
