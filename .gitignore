@@ -5,3 +5,4 @@ node_modules/
 .DS_Store
 venv/
 *.logkalshi_private_key.key
+kalshi_private_key.key
