@@ -41,24 +41,25 @@ def run_bot():
     for market in markets:
         ticker = market.get("ticker")
         title = market.get("title", "")
-        yes_price = market.get("yes_ask_dollars", 0)
+        yes_price = float(market.get("yes_ask_dollars", 0))
+        no_price = float(market.get("no_ask_dollars", 0))
         if not ticker or not yes_price:
             continue
 
-        market_odds = float(yes_price)
         threshold = extract_threshold(ticker)
         if threshold is None:
             continue
 
-        result = analyze_crypto_market("bitcoin", threshold, market_odds)
+        result = analyze_crypto_market("bitcoin", threshold, 0.5)
         if result is None:
             continue
 
-        edge = result.get("edge", 0)
-        true_prob = result.get("true_prob", 0)
         recommendation = result.get("recommendation", "")
+        true_prob = result.get("true_prob", 0)
+        market_odds = no_price if recommendation == "NO" else yes_price
+        edge = true_prob - market_odds
 
-        if abs(edge) >= EDGE_THRESHOLD:
+        if edge >= EDGE_THRESHOLD:
             bet_size = calculate_bet_size(abs(edge), true_prob)
             price_cents = int(market_odds * 100)
             print(f"EDGE FOUND: {ticker} | {recommendation} | edge: {edge:.2%} | bet: ${bet_size}")
