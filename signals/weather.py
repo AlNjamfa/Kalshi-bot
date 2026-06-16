@@ -32,9 +32,11 @@ def get_forecast(forecast_url):
 def analyze_weather_market(lat, lon, market_type, threshold, market_odds):
     grid = get_grid(lat, lon)
     periods = get_forecast(grid["forecast_url"])
-    today = periods[0]
-    temp = today["temperature"]
-    precip = today["probabilityOfPrecipitation"]["value"]
+    # Use tomorrow's daytime forecast (index 2), not today's (index 0)
+    # Today's market is near-resolved; tomorrow has genuine uncertainty
+    target = periods[2] if len(periods) > 2 else periods[0]
+    temp = target["temperature"]
+    precip = target["probabilityOfPrecipitation"]["value"] or 0
 
     if market_type == "rain":
         true_prob = precip / 100

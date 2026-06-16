@@ -53,7 +53,10 @@ def run_bot():
         title = market.get("title", "")
         yes_price = float(market.get("yes_ask_dollars", 0))
         no_price = float(market.get("no_ask_dollars", 0))
-        if not ticker or not yes_price:
+        volume = float(market.get("volume_24h_fp", 0))
+        if not ticker or not yes_price or volume == 0:
+            continue
+        if yes_price < 0.15 or yes_price > 0.85:
             continue
 
         threshold = extract_threshold(ticker)
@@ -92,7 +95,10 @@ def run_bot():
             title = market.get("title", "")
             yes_price = float(market.get("yes_ask_dollars", 0))
             no_price = float(market.get("no_ask_dollars", 0))
-            if not ticker or not yes_price:
+            volume = float(market.get("volume_24h_fp", 0))
+            if not ticker or not yes_price or volume == 0:
+                continue
+            if yes_price < 0.15 or yes_price > 0.85:
                 continue
 
             threshold = extract_threshold(ticker)
