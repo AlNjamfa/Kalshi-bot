@@ -44,7 +44,7 @@ def analyze_weather_market(lat, lon, market_type, threshold, market_odds):
         recommendation = "YES" if edge > 0.05 else "NO" if edge < -0.05 else "PASS"
         return {
             "market_type": market_type,
-            "temp": temp,
+            "forecast_temp": temp,
             "precip_pct": precip,
             "true_prob": true_prob,
             "market_odds": market_odds,
@@ -66,7 +66,7 @@ def analyze_weather_market(lat, lon, market_type, threshold, market_odds):
         recommendation = "YES" if edge > 0.05 else "NO" if edge < -0.05 else "PASS"
         return {
             "market_type": market_type,
-            "temp": temp,
+            "forecast_temp": temp,
             "threshold": threshold,
             "true_prob": true_prob,
             "market_odds": market_odds,
@@ -88,7 +88,7 @@ def analyze_weather_market(lat, lon, market_type, threshold, market_odds):
         recommendation = "YES" if edge > 0.05 else "NO" if edge < -0.05 else "PASS"
         return {
             "market_type": market_type,
-            "temp": temp,
+            "forecast_temp": temp,
             "threshold": threshold,
             "true_prob": true_prob,
             "market_odds": market_odds,
