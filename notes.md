@@ -396,3 +396,7 @@ Kalshi MLB tickers look like KXMLBGAME-26JUN201915NYMPHI-NYM. To match them to P
 
 ### Bot now has three loops
 Crypto (KXBTCD) → weather (WEATHER_MARKETS dict) → sports (KXMLBGAME). All run in DRY_RUN mode. Sports is finding real edges on MLB games — 9.44% and 7.44% on NY Mets games today.
+
+### forecast_temp key fix (weather.py)
+weather.py was returning "temp" but bot.py was looking for "forecast_temp". Renamed the key in all three return blocks (rain, temp_above, temp_below) so the Why column in the SHEETS ROW prints the actual forecast temperature vs the threshold. Small key name mismatch — big diagnostic difference.
+
