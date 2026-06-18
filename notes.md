@@ -382,3 +382,17 @@ Negative edge = market knows more than us → skip it.
 Fewer trades + higher quality = faster compounding.
 Kelly sizing grows the bankroll proportionally to edge — never risks ruin.
 The path to $400k from $10 is discipline, not volume.
+
+## Session — June 17, 2026
+
+### Sports loop wired into bot.py
+odds.py was broken because it expected American odds but Pinnacle's API returns decimal odds (e.g. 3.93 not +393). Fixed by replacing convert_american_to_prob() with decimal_to_prob() which just does 1 / decimal_odds. Also added oddsFormat: "decimal" to the API params so Pinnacle returns the right format.
+
+### SPORT_KEYS dict in odds.py
+The Odds API uses specific sport key strings like "baseball_mlb" not just "baseball". Added a SPORT_KEYS lookup dict so get_sports_edge("baseball", team, odds) maps cleanly to the right endpoint.
+
+### Team name matching in bot.py
+Kalshi MLB tickers look like KXMLBGAME-26JUN201915NYMPHI-NYM. To match them to Pinnacle team names we extract the last 3 letters of each team abbreviation from the ticker and check if they appear in the full team name. Not perfect but works for most cases.
+
+### Bot now has three loops
+Crypto (KXBTCD) → weather (WEATHER_MARKETS dict) → sports (KXMLBGAME). All run in DRY_RUN mode. Sports is finding real edges on MLB games — 9.44% and 7.44% on NY Mets games today.
