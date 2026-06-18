@@ -41,6 +41,45 @@ def log_decision(data):
     data["timestamp"] = datetime.utcnow().isoformat()
     with open(LOG_FILE, "a") as f:
         f.write(json.dumps(data) + chr(10))
+    if data.get("action") == "DRY_RUN":
+        signal = "Weather" if any(x in data["ticker"] for x in ["HIGH", "LOW"]) else "Sports" if "MLB" in data["ticker"] else "Crypto"
+        date = datetime.utcnow().strftime("%b %d")
+        print(f"\n  ── SHEETS ROW ──────────────────────────────────────")
+        print(f"  Date:         {date}")
+        print(f"  Ticker:       {data['ticker']}")
+        print(f"  Name:         {data.get('human_name', data['ticker'])}")
+        print(f"  Signal:       {signal}")
+        print(f"  Prediction:   {data['recommendation']}")
+        print(f"  Why:          {data.get('reason', 'N/A')}")
+        print(f"  True Prob:    {data['true_prob']:.2f}")
+        print(f"  Market Price: {data['market_odds']:.2f}")
+        print(f"  Edge:         {data['edge']:.2%}")
+        print(f"  Bet Size:     ${data['bet_size']}")
+        print(f"  Resolved:     [fill in tonight]")
+        print(f"  Correct:      [fill in tonight]")
+        print(f"  ────────────────────────────────────────────────────")
+
+def format_ticker(ticker):
+    try:
+        if "KXBTCD" in ticker:
+            parts = ticker.split("-")
+            date = parts[1][2:7]
+            threshold = parts[2].replace("T", "$")
+            return f"Bitcoin | {date} | Above {threshold}"
+        elif "KXMLBGAME" in ticker:
+            parts = ticker.split("-")
+            date_time = parts[1][2:9]
+            teams = parts[2] if len(parts) > 2 else ""
+            return f"MLB | {date_time} | {teams}"
+        else:
+            parts = ticker.split("-")
+            series = parts[0].replace("KXHIGH", "").replace("KXLOW", "LOW ")
+            date = parts[1][2:7]
+            threshold = parts[2].replace("T", "")
+            direction = "Above" if "HIGH" in ticker else "Below"
+            return f"{series} Temp | {date} | {direction} {threshold}°"
+    except:
+        return ticker
 
 def extract_threshold(ticker):
     try:
@@ -58,8 +97,12 @@ def calculate_bet_size(edge, true_prob):
     return max(round(bet, 2), 0)
 
 def run_bot():
+    print("=" * 60)
+    print(f"BOT RUN — {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC")
+    print("=" * 60)
+
     # --- CRYPTO LOOP ---
-    print("Fetching live Bitcoin markets...")
+    print("\nFetching live Bitcoin markets...")
     markets = get_markets(100, series_ticker="KXBTCD")
     print(f"Found {len(markets)} markets")
 
@@ -81,21 +124,25 @@ def run_bot():
             continue
         recommendation = result.get("recommendation", "")
         true_prob = result.get("true_prob", 0)
+        current_price = result.get("current_price", 0)
         market_odds = no_price if recommendation == "NO" else yes_price
         edge = true_prob - market_odds
+        reason = f"BTC ${current_price:,.0f} vs threshold ${threshold:,.0f} — {'above' if current_price > threshold else 'below'}"
+        human_name = format_ticker(ticker)
         if edge >= EDGE_THRESHOLD:
             bet_size = calculate_bet_size(abs(edge), true_prob)
             price_cents = int(market_odds * 100)
-            print(f"EDGE FOUND: {ticker} | {recommendation} | edge: {edge:.2%} | bet: ${bet_size}")
-            log_decision({"ticker": ticker, "title": title, "recommendation": recommendation, "edge": edge, "true_prob": true_prob, "market_odds": market_odds, "bet_size": bet_size, "action": "DRY_RUN" if DRY_RUN else "ORDER_PLACED"})
+            print(f"\n  EDGE FOUND: {human_name}")
+            print(f"  {recommendation} | Edge: {edge:.2%} | Bet: ${bet_size} | Price: {price_cents}c")
+            log_decision({"ticker": ticker, "human_name": human_name, "title": title, "recommendation": recommendation, "edge": edge, "true_prob": true_prob, "market_odds": market_odds, "bet_size": bet_size, "reason": reason, "action": "DRY_RUN" if DRY_RUN else "ORDER_PLACED"})
             if DRY_RUN:
-                print(f"DRY RUN - would place order: {ticker} {recommendation} @ {price_cents}c")
+                print(f"  DRY RUN — would place: {ticker} {recommendation} @ {price_cents}c")
             else:
                 side = "yes" if recommendation == "YES" else "no"
                 place_order(ticker, side, 1, price_cents)
         else:
-            print(f"No edge: {ticker} | edge: {edge:.2%}")
-            log_decision({"ticker": ticker, "title": title, "recommendation": "PASS", "edge": edge, "true_prob": true_prob, "market_odds": market_odds, "bet_size": 0, "action": "NO_EDGE"})
+            print(f"  No edge: {human_name} | {edge:.2%}")
+            log_decision({"ticker": ticker, "human_name": human_name, "title": title, "recommendation": "PASS", "edge": edge, "true_prob": true_prob, "market_odds": market_odds, "bet_size": 0, "reason": reason, "action": "NO_EDGE"})
 
     # --- WEATHER LOOP ---
     print("\nFetching live weather markets...")
@@ -119,20 +166,25 @@ def run_bot():
                 continue
             recommendation = result.get("recommendation", "")
             true_prob = result.get("true_prob", 0)
+            forecast_temp = result.get("forecast_temp", 0)
             market_odds = no_price if recommendation == "NO" else yes_price
             edge = true_prob - market_odds
+            direction = "above" if config["market_type"] == "temp_above" else "below"
+            reason = f"{config['city']} forecast {forecast_temp}° vs threshold {threshold}° — NOAA says {direction}"
+            human_name = format_ticker(ticker)
             if edge >= EDGE_THRESHOLD:
                 bet_size = calculate_bet_size(abs(edge), true_prob)
                 price_cents = int(market_odds * 100)
-                print(f"EDGE FOUND: {ticker} | {recommendation} | edge: {edge:.2%} | bet: ${bet_size}")
-                log_decision({"ticker": ticker, "title": title, "recommendation": recommendation, "edge": edge, "true_prob": true_prob, "market_odds": market_odds, "bet_size": bet_size, "action": "DRY_RUN" if DRY_RUN else "ORDER_PLACED"})
+                print(f"\n  EDGE FOUND: {human_name}")
+                print(f"  {recommendation} | Edge: {edge:.2%} | Bet: ${bet_size} | Price: {price_cents}c")
+                log_decision({"ticker": ticker, "human_name": human_name, "title": title, "recommendation": recommendation, "edge": edge, "true_prob": true_prob, "market_odds": market_odds, "bet_size": bet_size, "reason": reason, "action": "DRY_RUN" if DRY_RUN else "ORDER_PLACED"})
                 if DRY_RUN:
-                    print(f"DRY RUN - would place order: {ticker} {recommendation} @ {price_cents}c")
+                    print(f"  DRY RUN — would place: {ticker} {recommendation} @ {price_cents}c")
                 else:
                     side = "yes" if recommendation == "YES" else "no"
                     place_order(ticker, side, 1, price_cents)
             else:
-                print(f"No edge: {ticker} | edge: {edge:.2%}")
+                print(f"  No edge: {human_name} | {edge:.2%}")
 
     # --- SPORTS LOOP ---
     print("\nFetching live sports markets...")
@@ -163,18 +215,25 @@ def run_bot():
         true_prob = result.get("pinnacle_prob", 0)
         market_odds = no_price if recommendation == "NO" else yes_price
         edge = true_prob - market_odds
+        reason = f"Pinnacle: {matched_team} {true_prob:.0%} vs Kalshi: {yes_price:.0%} — {edge:.1%} gap"
+        human_name = format_ticker(ticker)
         if edge >= EDGE_THRESHOLD:
             bet_size = calculate_bet_size(abs(edge), true_prob)
             price_cents = int(market_odds * 100)
-            print(f"EDGE FOUND: {ticker} | {recommendation} | edge: {edge:.2%} | bet: ${bet_size}")
-            log_decision({"ticker": ticker, "title": title, "recommendation": recommendation, "edge": edge, "true_prob": true_prob, "market_odds": market_odds, "bet_size": bet_size, "action": "DRY_RUN" if DRY_RUN else "ORDER_PLACED"})
+            print(f"\n  EDGE FOUND: {human_name}")
+            print(f"  {recommendation} | Edge: {edge:.2%} | Bet: ${bet_size} | Price: {price_cents}c")
+            log_decision({"ticker": ticker, "human_name": human_name, "title": title, "recommendation": recommendation, "edge": edge, "true_prob": true_prob, "market_odds": market_odds, "bet_size": bet_size, "reason": reason, "action": "DRY_RUN" if DRY_RUN else "ORDER_PLACED"})
             if DRY_RUN:
-                print(f"DRY RUN - would place order: {ticker} {recommendation} @ {price_cents}c")
+                print(f"  DRY RUN — would place: {ticker} {recommendation} @ {price_cents}c")
             else:
                 side = "yes" if recommendation == "YES" else "no"
                 place_order(ticker, side, 1, price_cents)
         else:
-            print(f"No edge: {ticker} | edge: {edge:.2%}")
+            print(f"  No edge: {human_name} | {edge:.2%}")
+
+    print("\n" + "=" * 60)
+    print("RUN COMPLETE")
+    print("=" * 60)
 
 if __name__ == "__main__":
     run_bot()
