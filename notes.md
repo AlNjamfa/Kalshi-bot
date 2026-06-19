@@ -400,3 +400,34 @@ Crypto (KXBTCD) → weather (WEATHER_MARKETS dict) → sports (KXMLBGAME). All r
 ### forecast_temp key fix (weather.py)
 weather.py was returning "temp" but bot.py was looking for "forecast_temp". Renamed the key in all three return blocks (rain, temp_above, temp_below) so the Why column in the SHEETS ROW prints the actual forecast temperature vs the threshold. Small key name mismatch — big diagnostic difference.
 
+### Signal failure thresholds — defined June 19, 2026
+
+These are the conditions under which I pause a signal and recalibrate
+before placing any more trades. Non-negotiable.
+
+Sports (Pinnacle vs Kalshi):
+- Minimum sample before trusting: 30 resolved trades
+- Pause if: win rate drops below 52% after 30 trades
+- Pause if: 5 consecutive losses at any point
+- Why 52%: below this the Pinnacle edge isn't overcoming Kalshi's
+  pricing efficiently enough to be profitable after variance
+
+Weather (NOAA tiers):
+- Minimum sample before trusting: 30 resolved trades
+- Pause if: win rate drops below 55% after 30 trades
+- Pause if: same city is wrong 3 times in a row
+- Why 55%: weather tiers are heuristic not backtested, need higher
+  bar to confirm they're calibrated
+
+Crypto (momentum tiers):
+- Minimum sample before trusting: 50 resolved trades
+- Pause if: win rate drops below 55% after 50 trades
+- Currently producing no DRY_RUN trades — Bitcoin above all
+  thresholds. Will revisit when crypto market conditions change.
+
+What "pause" means:
+- Set DRY_RUN = True for that signal only
+- Do not remove until win rate recovers above threshold
+  on next 20 trades
+- Document the pause and reason in notes.md
+
