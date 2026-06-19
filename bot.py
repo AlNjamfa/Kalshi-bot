@@ -16,6 +16,7 @@ DRY_RUN = True
 BANKROLL = float(os.getenv("BANKROLL", 500))
 MAX_KELLY = float(os.getenv("MAX_KELLY_FRACTION", 0.25))
 LOG_FILE = "logs/trades.jsonl"
+MIN_MARKET_ODDS = 0.10
 
 WEATHER_MARKETS = {
     "KXHIGHTHOU":    {"lat": 29.7604, "lon": -95.3698, "market_type": "temp_above", "city": "Houston"},
@@ -126,6 +127,9 @@ def run_bot():
         true_prob = result.get("true_prob", 0)
         current_price = result.get("current_price", 0)
         market_odds = no_price if recommendation == "NO" else yes_price
+        if market_odds < MIN_MARKET_ODDS:
+            print(f"  SKIPPED (market too certain): {format_ticker(ticker)} | odds: {market_odds:.2f}")
+            continue
         edge = true_prob - market_odds
         reason = f"BTC ${current_price:,.0f} vs threshold ${threshold:,.0f} — {'above' if current_price > threshold else 'below'}"
         human_name = format_ticker(ticker)
@@ -168,6 +172,9 @@ def run_bot():
             true_prob = result.get("true_prob", 0)
             forecast_temp = result.get("forecast_temp", 0)
             market_odds = no_price if recommendation == "NO" else yes_price
+            if market_odds < MIN_MARKET_ODDS:
+                print(f"  SKIPPED (market too certain): {format_ticker(ticker)} | odds: {market_odds:.2f}")
+                continue
             edge = true_prob - market_odds
             direction = "above" if config["market_type"] == "temp_above" else "below"
             reason = f"{config['city']} forecast {forecast_temp}° vs threshold {threshold}° — NOAA says {direction}"
@@ -214,6 +221,9 @@ def run_bot():
         recommendation = result.get("recommendation", "")
         true_prob = result.get("pinnacle_prob", 0)
         market_odds = no_price if recommendation == "NO" else yes_price
+        if market_odds < MIN_MARKET_ODDS:
+            print(f"  SKIPPED (market too certain): {format_ticker(ticker)} | odds: {market_odds:.2f}")
+            continue
         edge = true_prob - market_odds
         reason = f"Pinnacle: {matched_team} {true_prob:.0%} vs Kalshi: {yes_price:.0%} — {edge:.1%} gap"
         human_name = format_ticker(ticker)
