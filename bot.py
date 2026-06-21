@@ -27,16 +27,38 @@ WEATHER_MARKETS = {
     "KXLOWDEN":      {"lat": 39.7392, "lon": -104.9903, "market_type": "temp_below", "city": "Denver"},
 }
 
-MLB_TEAMS = [
-    "Arizona Diamondbacks", "Atlanta Braves", "Baltimore Orioles", "Boston Red Sox",
-    "Chicago Cubs", "Chicago White Sox", "Cincinnati Reds", "Cleveland Guardians",
-    "Colorado Rockies", "Detroit Tigers", "Houston Astros", "Kansas City Royals",
-    "Los Angeles Angels", "Los Angeles Dodgers", "Miami Marlins", "Milwaukee Brewers",
-    "Minnesota Twins", "New York Mets", "New York Yankees", "Oakland Athletics",
-    "Philadelphia Phillies", "Pittsburgh Pirates", "San Diego Padres", "San Francisco Giants",
-    "Seattle Mariners", "St. Louis Cardinals", "Tampa Bay Rays", "Texas Rangers",
-    "Toronto Blue Jays", "Washington Nationals",
-]
+MLB_ABBREV = {
+    "ARI": "Arizona Diamondbacks",
+    "ATL": "Atlanta Braves",
+    "BAL": "Baltimore Orioles",
+    "BOS": "Boston Red Sox",
+    "CHC": "Chicago Cubs",
+    "CWS": "Chicago White Sox",
+    "CIN": "Cincinnati Reds",
+    "CLE": "Cleveland Guardians",
+    "COL": "Colorado Rockies",
+    "DET": "Detroit Tigers",
+    "HOU": "Houston Astros",
+    "KCR": "Kansas City Royals",
+    "LAA": "Los Angeles Angels",
+    "LAD": "Los Angeles Dodgers",
+    "MIA": "Miami Marlins",
+    "MIL": "Milwaukee Brewers",
+    "MIN": "Minnesota Twins",
+    "NYM": "New York Mets",
+    "NYY": "New York Yankees",
+    "OAK": "Oakland Athletics",
+    "PHI": "Philadelphia Phillies",
+    "PIT": "Pittsburgh Pirates",
+    "SDP": "San Diego Padres",
+    "SFG": "San Francisco Giants",
+    "SEA": "Seattle Mariners",
+    "STL": "St. Louis Cardinals",
+    "TBR": "Tampa Bay Rays",
+    "TEX": "Texas Rangers",
+    "TOR": "Toronto Blue Jays",
+    "WSH": "Washington Nationals",
+}
 
 def log_decision(data):
     data["timestamp"] = datetime.utcnow().isoformat()
@@ -70,8 +92,9 @@ def format_ticker(ticker):
         elif "KXMLBGAME" in ticker:
             parts = ticker.split("-")
             date_time = parts[1][2:9]
-            teams = parts[2] if len(parts) > 2 else ""
-            return f"MLB | {date_time} | {teams}"
+            team_abbrev = parts[-1].upper()
+            team_name = MLB_ABBREV.get(team_abbrev, team_abbrev)
+            return f"MLB | {date_time} | {team_name}"
         else:
             parts = ticker.split("-")
             series = parts[0].replace("KXHIGH", "").replace("KXLOW", "LOW ")
@@ -208,11 +231,8 @@ def run_bot():
             continue
         if yes_price < 0.15 or yes_price > 0.85:
             continue
-        matched_team = None
-        for team in MLB_TEAMS:
-            if team.split()[-1].upper()[:3] in ticker.upper():
-                matched_team = team
-                break
+        ticker_suffix = ticker.split("-")[-1].upper()
+        matched_team = MLB_ABBREV.get(ticker_suffix)
         if matched_team is None:
             continue
         result = get_sports_edge("baseball", matched_team, yes_price)
