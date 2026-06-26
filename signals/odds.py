@@ -32,6 +32,8 @@ def get_sports_edge(sport, team, market_odds):
     }
     response = requests.get(url, params=params)
     data = response.json()
+    if not isinstance(data, list):
+        return None
     for game in data:
         home = game.get("home_team", "")
         away = game.get("away_team", "")
