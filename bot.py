@@ -61,6 +61,9 @@ MLB_ABBREV = {
 }
 
 def log_decision(data):
+    from kalshi.orders import already_traded_today
+    if already_traded_today(data.get("ticker", "")):
+        return
     data["timestamp"] = datetime.utcnow().isoformat()
     with open(LOG_FILE, "a") as f:
         f.write(json.dumps(data) + chr(10))
